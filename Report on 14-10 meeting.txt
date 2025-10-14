@@ -1,0 +1,17 @@
+Report on Tuesday's meeting at 14/10
+==================================================================|
+								  |
+Made the agenda for Thursday's meeting(Theo, Sun, Alex, Tolis)    |
+Agenda								  |
+1) Learning about Mathematical Models when concerning BCs         |
+2) Lack of communication from all members                         |
+3) PRoTECT script(python graph + API for PRoTECT)-(Alex)          |
+								  |
+==================================================================|
+-) Long Term Goal: "Meta Analysis" of most important Papers.	  |
+								  |
+||=========||                                                     |
+||Big Goal ||							  |
+||=========||							  |
+-In depth understanding of the concept we are working with.       |
+==================================================================|
