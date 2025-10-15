@@ -4,6 +4,11 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.patches import Rectangle, Circle
 import math
 
+# Safety states (same as testing.py)
+SAFE = 0
+MILD_UNSAFE = 1
+UNSAFE = 2
+
 class MovingCar:
     def __init__(self, start_point, end_point, obstacle_positions, barrier_distance, speed=0.02):
         self.start_point = np.array(start_point, dtype=float)
@@ -21,6 +26,12 @@ class MovingCar:
         self.progress = 0.0
         self.has_reached_end = False
         self.visited_waypoints = []
+        
+        # Safety tracking
+        self.safe_frames = 0
+        self.mild_unsafe_frames = 0
+        self.unsafe_frames = 0
+        self.min_distance_observed = float('inf')
         
         # Setup the plot
         self.fig, self.ax = plt.subplots(figsize=(10, 8))
@@ -128,6 +139,29 @@ class MovingCar:
         
         return safe_point
     
+    def get_distance_to_obstacles(self):
+        """Calculate minimum distance to any obstacle"""
+        if not self.obstacle_positions:
+            return float('inf')
+        
+        distances = [np.linalg.norm(self.current_position - obstacle) 
+                    for obstacle in self.obstacle_positions]
+        return min(distances)
+    
+    def get_safety_state(self):
+        """Determine safety state based on distance to obstacles"""
+        distance = self.get_distance_to_obstacles()
+        
+        # Define obstacle radius (considering car size)
+        obstacle_radius = 0.5  # Car is approximately 0.8x0.4, so 0.5 is reasonable
+        
+        if distance < obstacle_radius:
+            return UNSAFE  # Intersects obstacle
+        elif distance < self.barrier_distance:
+            return MILD_UNSAFE  # Intersects barrier circle but not obstacle
+        else:
+            return SAFE  # No intersection
+    
     def setup_plot(self):
         """Setup the plot with proper limits and labels"""
         # Combine all points to calculate limits
@@ -163,18 +197,25 @@ class MovingCar:
         self.ax.plot(*self.start_point, 'go', markersize=10, label='Start')
         self.ax.plot(*self.end_point, 'ro', markersize=10, label='End')
         
-        # Mark obstacle positions with barrier distance circles
+        # Mark obstacle positions with multiple circles
         for i, obstacle in enumerate(self.obstacle_positions):
             self.ax.plot(*obstacle, 's', markersize=12, color='orange', 
                         label=f'Obstacle {i+1}' if i == 0 else "")
             
-            # Add obstacle barrier zone circle
-            barrier_zone = plt.Circle(obstacle, self.barrier_distance, color='red', alpha=0.2)
+            # Add obstacle physical zone circle (red)
+            physical_zone = plt.Circle(obstacle, 0.5, color='red', alpha=0.3)
+            self.ax.add_patch(physical_zone)
+            
+            # Add obstacle barrier zone circle (orange)
+            barrier_zone = plt.Circle(obstacle, self.barrier_distance, color='orange', alpha=0.2)
             self.ax.add_patch(barrier_zone)
             
-            # Add text showing barrier distance
-            self.ax.text(obstacle[0], obstacle[1] + self.barrier_distance + 0.3, 
+            # Add text showing zones
+            self.ax.text(obstacle[0], obstacle[1] + self.barrier_distance + 0.5, 
                         f'Barrier: {self.barrier_distance}', 
+                        ha='center', va='bottom', fontsize=8, color='orange')
+            self.ax.text(obstacle[0], obstacle[1] + 0.5 + 0.3, 
+                        f'Physical: 0.5', 
                         ha='center', va='bottom', fontsize=8, color='red')
         
         self.ax.legend()
@@ -220,25 +261,6 @@ class MovingCar:
         
         return car_body, wheels
     
-    def is_too_close_to_obstacle(self, position):
-        """Check if position is too close to any obstacle and log if it is"""
-        for i, obstacle in enumerate(self.obstacle_positions):
-            distance = np.linalg.norm(position - obstacle)
-            if distance < self.barrier_distance:
-                print(f"🚨 BARRIER VIOLATION at position {position}!")
-                print(f"   Too close to obstacle {i+1} at {obstacle}")
-                print(f"   Distance: {distance:.3f}, Barrier: {self.barrier_distance}")
-                return True, i
-        return False, -1
-    
-    def is_waypoint_visited(self, waypoint):
-        """Check if a waypoint has been visited (using tuple comparison for numpy arrays)"""
-        waypoint_tuple = tuple(waypoint)
-        for visited in self.visited_waypoints:
-            if np.allclose(waypoint, visited):
-                return True
-        return False
-    
     def log_waypoint_info(self):
         """Log information about current waypoint"""
         if self.current_path_index < len(self.path):
@@ -248,11 +270,14 @@ class MovingCar:
             if not self.is_waypoint_visited(current_waypoint):
                 self.visited_waypoints.append(current_waypoint.copy())
                 print(f"📍 Reached waypoint {self.current_path_index}: {current_waypoint}")
-                
-                # Check if this waypoint is safe
-                is_unsafe, obstacle_idx = self.is_too_close_to_obstacle(current_waypoint)
-                if is_unsafe:
-                    print(f"   ⚠️  WARNING: Waypoint is inside barrier zone of obstacle {obstacle_idx + 1}")
+    
+    def is_waypoint_visited(self, waypoint):
+        """Check if a waypoint has been visited (using tuple comparison for numpy arrays)"""
+        waypoint_tuple = tuple(waypoint)
+        for visited in self.visited_waypoints:
+            if np.allclose(waypoint, visited):
+                return True
+        return False
     
     def update(self, frame):
         """Update function for animation"""
@@ -260,10 +285,11 @@ class MovingCar:
         for patch in self.ax.patches[:]:
             if isinstance(patch, (Rectangle, Circle)):
                 patch_color = patch.get_facecolor()
-                # Check if it's a car part (blue, green, or black)
+                # Check if it's a car part (blue, green, orange, or black)
                 if (len(patch_color) > 0 and 
                     (np.allclose(patch_color, [0., 0., 1., 0.8]) or
                      np.allclose(patch_color, [0., 1., 0., 1.]) or
+                     np.allclose(patch_color, [1., 0.5, 0., 1.]) or
                      np.allclose(patch_color, [0., 0., 0., 0.7]))):
                     patch.remove()
         
@@ -295,35 +321,60 @@ class MovingCar:
                 if not self.has_reached_end:
                     self.current_position = segment_start + self.progress * (segment_end - segment_start)
                     
-                    # Continuous safety check (but don't spam the console)
-                    if frame % 10 == 0:  # Only check every 10 frames to reduce spam
-                        is_unsafe, obstacle_idx = self.is_too_close_to_obstacle(self.current_position)
-                        if is_unsafe:
-                            print(f"🚨 CONTINUOUS CHECK: Car at {self.current_position} is inside barrier of obstacle {obstacle_idx + 1}")
+                    # Update safety tracking
+                    distance = self.get_distance_to_obstacles()
+                    self.min_distance_observed = min(self.min_distance_observed, distance)
+                    safety_state = self.get_safety_state()
+                    
+                    if safety_state == SAFE:
+                        self.safe_frames += 1
+                    elif safety_state == MILD_UNSAFE:
+                        self.mild_unsafe_frames += 1
+                    else:
+                        self.unsafe_frames += 1
+                    
+                    # Log safety state changes
+                    if frame % 20 == 0:  # Log every 20 frames to reduce spam
+                        if safety_state == MILD_UNSAFE:
+                            print(f"🟡 MILD_UNSAFE: Car at barrier boundary - Distance: {distance:.3f}")
+                        elif safety_state == UNSAFE:
+                            print(f"🔴 UNSAFE: Car too close to obstacle - Distance: {distance:.3f}")
             else:
                 self.has_reached_end = True
                 self.current_position = self.end_point.copy()
         
-        # Create new car
+        # Create new car with color based on safety state
         car_body, wheels = self.create_car_patches(self.current_position)
+        
+        # Set car color based on current safety state
+        safety_state = self.get_safety_state()
+        if safety_state == SAFE:
+            car_body.set_facecolor('blue')
+        elif safety_state == MILD_UNSAFE:
+            car_body.set_facecolor('orange')
+        else:
+            car_body.set_facecolor('red')
         
         # Add car to plot
         self.ax.add_patch(car_body)
         for wheel in wheels:
             self.ax.add_patch(wheel)
         
-        # Update title with current position and status
+        # Update title with current position, status, and safety info
         status = "STOPPED" if self.has_reached_end else f"MOVING (Segment {self.current_path_index + 1}/{len(self.path) - 1})"
-        is_unsafe, _ = self.is_too_close_to_obstacle(self.current_position)
-        obstacle_warning = " - BARRIER VIOLATION!" if is_unsafe else ""
-        self.ax.set_title(f'Moving Car - Position: ({self.current_position[0]:.2f}, {self.current_position[1]:.2f}) - {status}{obstacle_warning}')
         
-        # Change car color when stopped or when too close to obstacle
-        if self.has_reached_end:
-            car_body.set_facecolor('green')
-            car_body.set_alpha(1.0)
-        elif is_unsafe:
-            car_body.set_facecolor('red')
+        # Get safety state text
+        if safety_state == SAFE:
+            safety_text = "✅ SAFE"
+        elif safety_state == MILD_UNSAFE:
+            safety_text = "🟡 MILD_UNSAFE"
+        else:
+            safety_text = "🔴 UNSAFE"
+        
+        distance = self.get_distance_to_obstacles()
+        
+        self.ax.set_title(f'Moving Car - Position: ({self.current_position[0]:.2f}, {self.current_position[1]:.2f}) - {status}\n'
+                         f'Safety: {safety_text} - Distance: {distance:.3f} - Min Distance: {self.min_distance_observed:.3f}')
         
         return [car_body] + wheels
     
@@ -340,6 +391,15 @@ class MovingCar:
                                      interval=50, blit=False, repeat=True)
         
         plt.show()
+        
+        # Print final safety summary
+        print(f"\n🎯 FINAL SAFETY SUMMARY:")
+        print(f"   ✅ SAFE frames: {self.safe_frames}")
+        print(f"   🟡 MILD_UNSAFE frames: {self.mild_unsafe_frames}")
+        print(f"   🔴 UNSAFE frames: {self.unsafe_frames}")
+        print(f"   📏 Minimum distance observed: {self.min_distance_observed:.3f}")
+
+# ... (rest of the animation.py file remains the same with get_user_coordinates, get_obstacle_positions, etc.)
 
 def get_user_coordinates():
     """Get start and end coordinates from user"""
@@ -391,13 +451,10 @@ def get_speed():
         print("Using default speed 0.02")
         return 0.02
 
-def main():
-    """Main function to run the animation"""
-    print("Moving Car Animation - Advanced Obstacle Avoidance")
-    print("=================================================")
-    print("The car will move from start to end while maintaining safe distance from obstacles.")
-    print("Detailed logging will show waypoints and barrier violations.")
-    print()
+def run_single_simulation():
+    """Run a single simulation with user input"""
+    print("🚗 Single Car Simulation")
+    print("========================")
     
     # Get coordinates from user
     start_point, end_point = get_user_coordinates()
@@ -414,6 +471,3 @@ def main():
     # Create and run animation
     car_animation = MovingCar(start_point, end_point, obstacle_positions, barrier_distance, speed=speed)
     car_animation.animate()
-
-if __name__ == "__main__":
-    main()
