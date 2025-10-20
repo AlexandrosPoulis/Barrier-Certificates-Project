@@ -63,9 +63,9 @@ class MovingCar:
         for i, obstacle in enumerate(self.obstacle_positions):
             print(f"Planning around obstacle {i+1} at {obstacle}")
             
-            # Calculate vector from current position to obstacle
-            to_obstacle = obstacle - current_pos
-            obstacle_dist = np.linalg.norm(to_obstacle)
+            # # Calculate vector from current position to obstacle
+            # to_obstacle = obstacle - current_pos
+            # obstacle_dist = np.linalg.norm(to_obstacle)
             
             # Calculate the main direction (start to end)
             main_direction = self.end_point - self.start_point
