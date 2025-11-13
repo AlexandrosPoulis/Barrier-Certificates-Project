@@ -6,9 +6,10 @@ https://github.com/Kiguli/PRoTECT
 
 The structure of the repo to run the code correctly should be :
 
-Main:
-  - PRoTECT
-  - the code file
+Main:  
+|  
+|---> PRoTECT  
+|---> the code file  
 
 Changes needed to PRoTECT:
   - Change the imports in PRoTECT\src\functions to PROTECT\... for it to work
