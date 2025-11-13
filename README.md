@@ -11,4 +11,4 @@ repo/
 ├── BFCreation.py   
 
 Changes needed to PRoTECT:
-  - Change the imports in PRoTECT\src\functions to PROTECT\... for it to work
+  - Change the imports in PRoTECT\src\functions to PROTECT\ ... for it to work
