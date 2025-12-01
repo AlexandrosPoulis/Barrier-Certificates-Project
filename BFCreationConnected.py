@@ -12,23 +12,34 @@ import numpy as np
 from PRoTECT.src.functions.parallel_ct_DS import parallel_ct_DS
 from PRoTECT.src.functions.ct_DS import ct_DS
 # ========================= Parameters =========================
-def BFCreation(Window, Obstsacle):
+def BFCreation(Window, Obstsacle, car, ob_h=10):
     dim = 2  # dimension of state space
 
     # Initial set
-    L_initial = np.array([0, 0])
-    U_initial = np.array([5, 5])
+    L_initial = np.array([car[0], car[1]])
+    U_initial = np.array([car[0]+ob_h, car[1]+ob_h])
 
-    # Unsafe set
-    L_unsafe1 = np.array([Obstsacle[0]-2, Obstsacle[0]-2])
-    U_unsafe1 = np.array([Obstsacle[0]+2, Obstsacle[0]+2])
+    # Initializing unsafe list
+    L_unsafe1 = np.array([], dtype=float) 
+    U_unsafe1 = np.array([], dtype=float) 
+    # Use this when using simulatorV1
+    #for x,y in Obstsacle:
+        # Unsafe set
+    #    L_unsafe1 = np.append(L_unsafe1, [x-ob_h/2, y-ob_h/2])
+    #    U_unsafe1 = np.append(U_unsafe1, [x+ob_h/2, y+ob_h/2])
     
+    # Use this when using simulatorV2
+    for i in Obstsacle.obst:
+        L_unsafe1 = np.append(L_unsafe1, [i.x-ob_h, i.y-ob_h])
+        U_unsafe1 = np.append(U_unsafe1, [i.x+ob_h, i.y+ob_h]) 
 
 
-    # combine unsafe regions
+    ## combine unsafe regions
     L_unsafe = np.array([L_unsafe1])
     U_unsafe = np.array([U_unsafe1])
 
+    #print(L_unsafe)
+    #print(U_unsafe)
     # State space
     L_space = np.array([0, 0])
     U_space = np.array([Window[0], Window[1]])
@@ -89,4 +100,4 @@ def BFCreation(Window, Obstsacle):
         print("Results dictionary is empty.")
     else:
         print(result) # to receive just the BF do result["barrier"]
-    return(result["barrier"])
+    return(result["b_degree"], result["barrier"], result["gamma"], result["lambda"])
