@@ -4,16 +4,6 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.patches import Rectangle, Circle
 import math
 
-"""
-RRT* path planning and Pure Pursuit vehicle simulation.
-
-This module implements:
-- A simple RRT* planner (`RRTStarPlanner`) to compute a collision-free path.
-- A bicycle-kinematic vehicle controller using Pure Pursuit (`VehicleController`).
-- A Matplotlib-based visualizer (`CarVisualizer`) to animate the vehicle following
-the planned path and show obstacles and safety status.
-"""
-
 # --- Safety Level Constants ---
 SAFE = 0           # Vehicle is far from obstacles
 MILD_UNSAFE = 1    # Vehicle is within caution zone
@@ -95,10 +85,7 @@ class RRTStarPlanner:
         tree = [start_node]
         
         for iteration in range(max_iter):
-            # --- Sample a point in the search space ---
-            # With probability `goal_sample_rate` bias the sample toward the goal
-            # to improve convergence toward the target; otherwise sample uniformly
-            # inside the bounding box defined by start/end and obstacles.
+            # Occasionally sample the goal directly to guide the tree
             if np.random.random() < goal_sample_rate:
                 sample = self.end
             else:
@@ -110,12 +97,11 @@ class RRTStarPlanner:
             nearest = min(tree, key=lambda n: GeometryUtils.calc_distance(n.position, sample))
             
             # Steer from the nearest node toward the sample. The step size caps
-            # how far we extend the tree in one iteration (controls resolution).
+            # how far we extend the tree in one iteration.
             new_pt = self._steer(nearest.position, sample, step_size)
             
             # collision check: only add the new node if the segment from the
             # nearest node to the new point does not intersect any obstacle
-            # (within the configured `barrier_dist`).
             if self._is_collision_free(nearest.position, new_pt):
                 new_node = RRTNode(new_pt)
                 
@@ -579,4 +565,5 @@ if __name__ == "__main__":
     
     # Create and run simulation, change barrier distance and speed scale as needed
     sim = MovingCarSimulation(start, end, obstacles, barrier_dist=0.8, speed_scale=1.0)
+
     sim.run()
