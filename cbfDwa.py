@@ -111,6 +111,7 @@ class DWACBFController:
                     return False
         return True
 
+    # Heuristic Filter (Not CBF)
     def velocity_is_cbf_safe(self, state, v) -> bool:
         x_curr = state
         x_next = self.dynamics(state, v)
@@ -131,6 +132,27 @@ class DWACBFController:
                     return False
 
         return True
+
+    # Uncomment the following, and comment the above, to apply standard cbf    
+    # def velocity_is_cbf_safe(self, state, v):
+    #     x1, x2 = state
+    #     vx, vy = v
+        
+    #     B_val = self.B_xy(x1, x2)
+    #     h_val = -B_val + self.lam
+        
+    #     dBdx1, dBdx2 = self.gradB_xy(x1, x2)
+    #     dhdx1, dhdx2 = -dBdx1, -dBdx2
+        
+    #     gamma_cbf = 1.0
+        
+    #     lhs = dhdx1 * vx + dhdx2 * vy
+    #     rhs = -gamma_cbf * h_val
+        
+    #     if lhs < rhs:
+    #         return False
+        
+    #     return True
 
     def _dynamic_window(self, current_v):
         v_min = np.maximum(current_v - self.a_max * self.dt, -self.v_max)
