@@ -5,6 +5,7 @@ import sys
 import time
 from typing import Tuple, Dict, Any, Optional, Sequence
 
+from math import sin, cos, tan, radians
 import numpy as np
 import sympy as sp
 
@@ -99,7 +100,23 @@ def compute_barrier(
     U_space = np.array([10.0, 10.0])
 
     x = sp.symbols(f"x1:{dim+1}")
-    f = np.array([sp.Integer(0), sp.Integer(0)], dtype=object)
+    
+    # Simple Unicycle Model Dynamics
+    v = 1.0
+    th = 45.0
+
+    f1 =  v * (cos(th))
+    f2 =  v * (sin(th))
+    f = np.array([f1, f2])
+
+    # Uncomment the following, and comment the above, to use zero dynamics
+    # f = np.array([sp.Integer(0), sp.Integer(0)], dtype=object)
+
+    # Prajna's NN paper's dynamics
+    # x1, x2 = x
+    # f1 = x2
+    # f2 = -x1 + (x1**3) / 3 - x2
+    # f = np.array([f1, f2], dtype=object)
 
     fixed_params = {
         "dim": dim,
