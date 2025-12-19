@@ -1,14 +1,4 @@
 # Barrier-Certificates-Project
-A git hub repo to upload all code and files such as group meeting reports and any documents written about the project by us
+A git hub repo used to upload code writen and used for the CS-IT-07 semester PBL group project.
 
-PRoTECT tool is in this repo:
-https://github.com/Kiguli/PRoTECT
-
-The structure of the repo to run the code correctly should be :
-
-repo/       
-├── PRoTECT  
-├── BFCreation.py   
-
-Changes needed to PRoTECT:
-  - Change the imports in PRoTECT\src\functions to PROTECT\ ... for it to work
+Any code in the legacy file are not used in the results of the report and may or may not be in working codition, any code outside of that folder is working and was used in the production of the final report
