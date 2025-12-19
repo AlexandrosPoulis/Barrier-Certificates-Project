@@ -1,9 +1,11 @@
+# BFCreation.py
 
 import os
 import sys
 import time
 from typing import Tuple, Dict, Any, Optional, Sequence
 
+from math import sin, cos, tan, radians
 import numpy as np
 import sympy as sp
 
@@ -80,7 +82,7 @@ def compute_barrier(
     grid_resolution: float = 0.1,
 ):
 
-    assert dim == 2, "Can't work for dim other than 2"
+    assert dim == 2, "This script is written for dim = 2 only."
 
     L_initial = np.array([4.4, 4.4])
     U_initial = np.array([4.6, 4.6])
@@ -98,7 +100,23 @@ def compute_barrier(
     U_space = np.array([10.0, 10.0])
 
     x = sp.symbols(f"x1:{dim+1}")
-    f = np.array([sp.Integer(0), sp.Integer(0)], dtype=object)
+    
+    # Simple Unicycle Model Dynamics
+    v = 1.0
+    th = 45.0
+
+    f1 =  v * (cos(th))
+    f2 =  v * (sin(th))
+    f = np.array([f1, f2])
+
+    # Uncomment the following, and comment the above, to use zero dynamics
+    # f = np.array([sp.Integer(0), sp.Integer(0)], dtype=object)
+
+    # Prajna's NN paper's dynamics
+    # x1, x2 = x
+    # f1 = x2
+    # f2 = -x1 + (x1**3) / 3 - x2
+    # f = np.array([f1, f2], dtype=object)
 
     fixed_params = {
         "dim": dim,
@@ -119,7 +137,7 @@ def compute_barrier(
     best = None
 
     for deg in candidate_degrees:
-        print(f"\nTrying PRoTECT barrier of degree {deg}")
+        print(f"\n Trying PRoTECT barrier of degree {deg} ")
         t0 = time.time()
         if use_parallel:
             result = parallel_ct_DS(deg, **fixed_params)
@@ -137,6 +155,7 @@ def compute_barrier(
         lam = float(result["lambda"])
         print(f"  gamma = {gamma}, lambda = {lam}")
 
+        # Numerical connectivity sanity check
         B_func = sp.lambdify((x[0], x[1]), B_expr, "numpy")
         initial_center = 0.5 * (L_initial + U_initial)
         goal = np.array([10.0, 10.0])
@@ -146,11 +165,13 @@ def compute_barrier(
         )
         if connected:
             print(
-                " Goal inside barrier "
+                "  Connectivity check OK: initial and goal appear "
+                "in the same component of {B < lambda} on this grid."
             )
         else:
             print(
-                " Goal outside barrier "
+                "  Connectivity check FAILED: at this resolution, the "
+                "initial and goal are in different components of {B < lambda}."
             )
 
         if best is None:
@@ -166,7 +187,7 @@ def compute_barrier(
         f"  gamma = {gamma} , lambda = {lam}"
     )
     print(
-        "WARNING: Global wall."
+        "WARNING: The selected barrier may still produce deadlock."
     )
 
     region_data = {

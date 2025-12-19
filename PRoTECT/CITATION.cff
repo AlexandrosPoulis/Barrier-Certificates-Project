@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Wooding"
+  given-names: "Ben"
+  orcid: "https://orcid.org/0000-0003-1713-717X"
+- family-names: "Horbanov"
+  given-names: "Viacheslav"
+  orcid: ""
+- family-names: "Lavaei"
+  given-names: "Abolfazl"
+  orcid: "https://orcid.org/0000-0003-4993-3170"
+title: "PRoTECT: Parallelized Construction of Safety Barrier Certificates for Nonlinear Polynomial Systems"
+version: 1.0
+doi: 10.48550/arXiv.2404.14804
+date-released: 2024-04-23
+url: "https://github.com/Kiguli/PRoTECT/"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Wooding"
+    given-names: "Ben"
+    orcid: "https://orcid.org/0000-0003-1713-717X"
+  - family-names: "Horbanov"
+    given-names: "Viacheslav"
+    orcid: ""
+  - family-names: "Lavaei"
+    given-names: "Abolfazl"
+    orcid: "https://orcid.org/0000-0003-4993-3170"
+  doi: "10.48550/arXiv.2404.14804"
+  journal: "arXiv"
+  month: 4
+  start: 1 # First page number
+  end: 27 # Last page number
+  title: "PRoTECT: Parallelized Construction of Safety Barrier Certificates for Nonlinear Polynomial Systems"
+  year: 2024

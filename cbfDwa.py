@@ -8,7 +8,6 @@ from bfc import compute_barrier
 
 class DWACBFController:
     def __init__(self):
-    
         (
             self.barrier_expr,
             self.gamma,
@@ -16,7 +15,7 @@ class DWACBFController:
             self.region_data,
         ) = compute_barrier(dim=2, use_parallel=False)
 
-        print(f"barrier: {self.barrier_expr}")
+        print(f"Using PRoTECT barrier: {self.barrier_expr}")
         print(f"gamma = {self.gamma}, lambda = {self.lam}")
 
         self.x1, self.x2 = sp.symbols("x1 x2")
@@ -44,14 +43,12 @@ class DWACBFController:
 
         self.obstacle_margin = 0.2
 
-
     def B_xy(self, x1, x2):
         return float(self.B_func(x1, x2))
 
     def gradB_xy(self, x1, x2):
         dBdx1, dBdx2 = self.gradB_func(x1, x2)
         return float(dBdx1), float(dBdx2)
-
 
     def in_unsafe_box(self, x1, x2) -> bool:
         for (L, U) in zip(self.L_unsafe, self.U_unsafe):
@@ -67,7 +64,6 @@ class DWACBFController:
         return False
 
     def dynamics(self, state, v):
-
         x1, x2 = state
         vx, vy = v
         x1_next = x1 + vx * self.dt
@@ -75,7 +71,6 @@ class DWACBFController:
         return np.array([x1_next, x2_next])
 
     def trajectory_predict(self, state, v):
-
         traj = [state.copy()]
         s = state.copy()
         for _ in range(self.N_pred):
@@ -83,13 +78,11 @@ class DWACBFController:
             traj.append(s.copy())
         return np.array(traj)
 
-
     def goal_cost(self, trajectory):
         final = trajectory[-1]
         return np.linalg.norm(final - self.goal)
 
     def barrier_cost(self, trajectory):
-
         cost = 0.0
         for (x1, x2) in trajectory:
             if self.near_unsafe_box(x1, x2):
@@ -111,7 +104,6 @@ class DWACBFController:
         return True
 
     def trajectory_is_safe(self, trajectory):
-
         for (x1, x2) in trajectory:
             if self.in_unsafe_box(x1, x2):
                 B_val = self.B_xy(x1, x2)
@@ -119,30 +111,50 @@ class DWACBFController:
                     return False
         return True
 
+    # Heuristic Filter (Not CBF)
+    def velocity_is_cbf_safe(self, state, v) -> bool:
+        x_curr = state
+        x_next = self.dynamics(state, v)
 
-    def velocity_is_cbf_safe(self, state, v):
+        B_curr = self.B_xy(x_curr[0], x_curr[1])
+        B_next = self.B_xy(x_next[0], x_next[1])
 
-        x1, x2 = state
-        vx, vy = v
-
-        B_val = self.B_xy(x1, x2)
-        h_val = -B_val + self.lam
-        
-        dBdx1, dBdx2 = self.gradB_xy(x1, x2)
-        dhdx1, dhdx2 = -dBdx1, -dBdx2
-        
-        gamma_cbf = 1.0
-        
-        lhs = dhdx1 * vx + dhdx2 * vy
-        rhs = -gamma_cbf * h_val
-        
-        if lhs < rhs:
+        if self.in_unsafe_box(x_next[0], x_next[1]) and B_next >= self.lam:
             return False
-        
+
+        if self.near_unsafe_box(x_curr[0], x_curr[1]) or self.near_unsafe_box(
+            x_next[0], x_next[1]
+        ):
+            if B_curr < self.lam:
+                eps = 0.2
+                rhs = B_curr + eps * (self.lam - B_curr)
+                if B_next > rhs:
+                    return False
+
         return True
 
-    def _dynamic_window(self, current_v):
+    # Uncomment the following, and comment the above, to apply standard cbf    
+    # def velocity_is_cbf_safe(self, state, v):
+    #     x1, x2 = state
+    #     vx, vy = v
+        
+    #     B_val = self.B_xy(x1, x2)
+    #     h_val = -B_val + self.lam
+        
+    #     dBdx1, dBdx2 = self.gradB_xy(x1, x2)
+    #     dhdx1, dhdx2 = -dBdx1, -dBdx2
+        
+    #     gamma_cbf = 1.0
+        
+    #     lhs = dhdx1 * vx + dhdx2 * vy
+    #     rhs = -gamma_cbf * h_val
+        
+    #     if lhs < rhs:
+    #         return False
+        
+    #     return True
 
+    def _dynamic_window(self, current_v):
         v_min = np.maximum(current_v - self.a_max * self.dt, -self.v_max)
         v_max = np.minimum(current_v + self.a_max * self.dt, self.v_max)
 
@@ -237,6 +249,7 @@ def plot_simulation_results(controller, trajectory):
         label="Unsafe region 2",
     )
 
+    # Trajectory
     x_traj = trajectory[:, 0]
     y_traj = trajectory[:, 1]
     plt.plot(x_traj, y_traj, "b-", label="Trajectory")
@@ -287,5 +300,5 @@ if __name__ == "__main__":
     initial_state = np.array([4.4, 4.4])
     trajectory, controls = controller.run_simulation(initial_state)
 
-    print(f"Finished in {len(trajectory)} steps.")
+    print(f"Simulation finished, {len(trajectory)} steps.")
     plot_simulation_results(controller, trajectory)
