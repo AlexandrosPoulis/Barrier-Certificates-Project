@@ -75,7 +75,7 @@ In the current code, obstacles are assembled into:
 * `L_unsafe = np.array([L_unsafe1, L_unsafe2, ...])`
 * `U_unsafe = np.array([U_unsafe1, U_unsafe2, ...])`
 
-######## Changing the number of obstacles
+###### Changing the number of obstacles
 
 1. **In `bfc.py`**:
 
@@ -111,7 +111,7 @@ set:
 
 There are **two “start” concepts**:
 
-######## (A) Initial region for PRoTECT (barrier synthesis)
+###### (A) Initial region for PRoTECT (barrier synthesis)
 
 Inside `bfc.py`, within `compute_barrier(...)`,
 
@@ -120,7 +120,7 @@ set the initial region:
 * `L_initial = [x_min, y_min]`
 * `U_initial = [x_max, y_max]`
 
-######## (B) Simulation initial state (starting point of the system)
+###### (B) Simulation initial state (starting point of the system)
 
 Inside `cbfDwa.py`, within `__main__`,
 
@@ -138,7 +138,7 @@ This point should be within the initial region defined in `bfc.py`.
 
 There are **two places** to keep consistent:
 
-######## (A) Simulator's goal
+###### (A) Simulator's goal
 
 Inside `cbfDwa.py`, within `DWACBFController.__init__`,
 
@@ -148,7 +148,7 @@ set:
 self.goal = np.array([gx, gy])
 ```
 
-######## (B) Barrier connectivity sanity-check goal
+###### (B) Barrier connectivity sanity-check goal
 
 Within `bfc.py`, inside `compute_barrier(...)`, when `_connectivity_check(...)` is called, it uses `goal = np.array([..., ...])`. If it determines that the goal is lies outside the calculated barrier, it will try finding another barrier with higher degree (checking all degree candidates defined within `candidate_degrees: Sequence[int] = (...)` until it finds a suitable canditate).
 
@@ -158,11 +158,11 @@ Within `bfc.py`, inside `compute_barrier(...)`, when `_connectivity_check(...)` 
 
 There are two places where its defined:
 
-######## (A) Simulator dynamics
+###### (A) Simulator dynamics
 
 Inside `cbfDwa.py`, within `def dynamics(self, state, v)`.
 
-######## (B) PRoTECT dynamics
+###### (B) PRoTECT dynamics
 
 Inside `bfc.py`, within `compute_barrier(...)`, the vector field `f` (same dimension as `x`) contains the dynamics to input it to PRoTECT.
 
@@ -172,6 +172,6 @@ Inside `bfc.py`, within `compute_barrier(...)`, the vector field `f` (same dimen
 
 Inside `cbfDwa.py`, the active implementation is labeled:
 
-* `## Heuristic Filter (Not CBF)` in `velocity_is_cbf_safe(...)`
+* `# Heuristic Filter (Not CBF)` in `velocity_is_cbf_safe(...)`
 
 The alternative is provided just below that part as commented code.
