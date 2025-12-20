@@ -74,6 +74,8 @@ class simulator():
         # case 2: [[280,300]],
         # case 3: [[280,300],[700,400]],
         # case 4: [[280,300], [400,300]]
+        # Change the obstacle_ to any of the above and also change no_obst to represent the number
+        # of obstacles to test any of the above cases
         
         self.x1_sym, self.x2_sym = sp.symbols("x1 x2")
         self.x = window[0]
@@ -234,21 +236,12 @@ class simulator():
             return result.x
         else:
             # Large ρ or very tight CBF bounds can trigger this.
-            print(result.x[2])
-            print("Fail")
-            #print(result.x) 
-            #runninggame = False
-            # If optimization fails, use nominal control
-            # This is mostly as for the simulator to not crash but 
-            # here is usualy when QP fails and that usualy is
-            # when we enter the said radious of an object
-            # if the nominal_u is used safety is no longer guaranteed
-            # the bellow solution guarantees it but at the cost of a possible deadlock 
 
-            # AFter the whole experiment I assume that thedeadlock is the
-            # way of the VNF to guaranteee the safety of the system at the 
-            # expense of a deadlock even though we have tried to account for it with
-            # ρ and δ that the QP takes into consideration as penalty and slack value respectively
+            # No value of u was found that satisfies the constaraints so we return [0,0,0]
+            # mostly since if we didn't the simulator would crash, but also [0,0,0] means that
+            # essentialy there will be no movement, and if the QP failed with the previous attempt to find u
+            # it would fail again essentialy still presenting the same deadlock that would realistically happen
+            # in this case
             return [0.0, 0.0, 0.0]#result.x#[u_nom[0], u_nom[1], 0.0]#u_nom
         
     # ----- Total barrier -----
