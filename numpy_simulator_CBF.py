@@ -68,7 +68,7 @@ class obstacle():
 
 class simulator():
     def __init__(self,window=[800,800],color=(0,0,0),veh_pos=[300,700],veh_color=(0,0,255)
-                 ,no_obst=2,obst_pos=[[280,300], [400,300]],obst_h=10,obst_color=(255,0,0),radius=30,goal_color=(0,255,0), goal = [300,0]):
+                 ,no_obst=1,obst_pos=[[280,300]],obst_h=10,obst_color=(255,0,0),radius=30,goal_color=(0,255,0), goal = [300,0]):
         # Numbers for the different tests done(other than the obstacles positions everything stayd the same):
         # case 1: [[100,100]],
         # case 2: [[280,300]],
@@ -253,3 +253,4 @@ class simulator():
 sim = simulator()
 
 sim.run_sim()
+
